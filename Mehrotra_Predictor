@@ -6,6 +6,11 @@ import time
 
 
 def MPC(A, b, c, x0, y0, s0):
+### A ist die Eingangsmatrix, x0,y0,s0 sind die Startbedingungen
+### c ist der Vektor der Minimierungsfunktion, b ist der Vektor der Nebenbedingungen
+### Modellgleichung min x st. Ax=b
+
+
     with open('MPC.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         header = ["x", "y", "s", "Zielfunktionswert", "Iterationsschritt", "Dauer der Iteration"]

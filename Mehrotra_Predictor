@@ -1,0 +1,212 @@
+import numpy as np
+import csv
+from scipy.linalg import fractional_matrix_power
+import time
+
+
+
+def MPC(A, b, c, x0, y0, s0):
+    with open('MPC.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        header = ["x", "y", "s", "Zielfunktionswert", "Iterationsschritt", "Dauer der Iteration"]
+
+        e = np.ones(np.shape(A)[1])
+        k = 0
+        x = x0
+        y = y0
+        s = s0
+        alpha = 0.9995
+        writer.writerow(header)
+        fmax = (np.dot(np.transpose(c), x))
+        writer.writerow([x, y, s, fmax, k, 0])
+        while True:
+            start = time.time()
+            S = np.real(np.diag(s))
+            X = np.real(np.diag(x))
+            S_invert = np.real(fractional_matrix_power(np.linalg.inv(S), 1))
+            X_power = np.real(fractional_matrix_power(X, 1))
+            D = np.power(np.matmul(S_invert, X_power), 1)  # D^2
+            M = np.dot(np.dot(A, D), np.transpose(A))  # AD^2A^T
+
+            r_b = np.dot(A, x) - b  # Ax-b
+            r_c = np.dot(np.transpose(A), y) + s - c  # A^T*y+s-c
+            r_xs = np.dot(np.dot(np.diag(x), np.diag(s)), e)  # rxs=XSe
+            r_y = -r_b + np.matmul(A, (np.dot(-np.matmul(np.linalg.inv(S), X), r_c) + np.dot(np.linalg.inv(S), r_xs)))
+
+            d_x_aff, d_y_aff, d_s_aff = Newton(A, M, X, S, r_y, r_c, r_xs)
+            alpha_prim_aff = argmax(x, d_x_aff)
+            alpha_du_aff = argmax(s, d_s_aff)
+
+            phi_aff = np.mean(np.dot(np.transpose(x + d_x_aff * alpha_prim_aff), (s + d_s_aff * alpha_du_aff)))
+            phi = np.mean(np.dot(np.transpose(x), s))
+
+            center = (phi_aff / phi) ** 3
+
+            S_aff = np.diag(d_s_aff)
+            X_aff = np.diag(d_x_aff)
+
+            r_xs = np.matmul(np.matmul(X_aff, S_aff), e) - np.dot((center * phi), e)
+            r_y = -r_b + np.matmul(A, (np.matmul(np.matmul(-np.linalg.inv(S), X), r_c)
+                                       + np.dot(np.linalg.inv(S), r_xs)))
+
+            d_x_korr, d_y_korr, d_s_korr = Newton(A, M, X, S, r_y, r_c, r_xs)
+
+            d_x = (d_x_aff + d_x_korr)
+            d_y = (d_y_aff + d_y_korr)
+            d_s = (d_s_aff + d_s_korr)
+
+            alpha_prim_max = argmax(x, d_x)
+            alpha_dual_max = argmax(s, d_s)
+
+            alpha_prim = (min(alpha * alpha_prim_max, 1))
+            alpha_dual = (min(alpha * alpha_dual_max, 1))
+
+            x = (x + np.dot(alpha_prim, d_x))
+            s = (s + np.dot(alpha_dual, d_s))
+            y = (y + np.dot(alpha_dual, d_y))
+
+            fmax = (np.dot(np.transpose(c), x))
+            dualfmax = np.dot(np.transpose(b), y)
+
+            ende = time.time()
+            breakpointer = np.abs(fmax - dualfmax) / (1 + fmax)
+            # if breakpointer<=10**(-8):
+            #   writer.writerow([x, y, s, fmax, k, ende - start])
+            #  print("kleiner")
+            # break
+
+            if dualfmax - fmax < 10 ** (-len(x)):
+                print("Komplementarität nahezu erfüllt")
+                writer.writerow([x, y, s, fmax, k, ende - start])
+                break
+            k = k + 1
+            writer.writerow([x, y, s, fmax, k, ende - start])
+
+    return fmax, x, k
+
+
+def Newton(A, M, X, S, r_y, r_c, r_xs):
+    # L = scipy.linalg.cholesky(M, lower=True)
+    # d_y_pre = scipy.linalg.solve_triangular(L, r_y)
+    # d_y = scipy.linalg.solve_triangular(np.transpose(L), d_y_pre)
+
+    d_y = np.linalg.lstsq(M, r_y, rcond=None)[0]
+    d_s = -r_c - np.dot(np.transpose(A), d_y)
+    d_x = -np.dot(np.linalg.inv(S), (r_xs + np.dot(X, d_s)))
+
+    return d_x, d_y, d_s
+
+
+def Fast_LR(A):
+    m, n = np.shape(A)
+    L = np.eye(m)
+    R = np.copy(A)
+    for k in range(n - 1):
+        L[k + 1:, k] = R[k + 1:, k] / R[k, k]
+        R[k + 1:, k:] = R[k + 1:, k:] - np.outer(L[k + 1:, k], R[k, k:])
+        return L, R
+
+
+def argmax(x, dx):
+    alpha_min = 1
+    for i in range(0, len(x)):
+        if dx[i] < 0:
+            alpha_minimum = ((-x[i] / dx[i]))
+            if alpha_minimum < alpha_min:
+                alpha_min = alpha_minimum
+
+    return alpha_min
+
+
+# f = lambda alpha: (x + alpha * dx)
+# fmax = ([f(alpha) for alpha in alpha_init])
+
+# fmax_re = fmax
+# fmax_re = np.array(fmax).reshape(-1, 3)
+
+# min_f = np.amax(fmax_re)
+# pos = np.where(fmax == min_f)[0]
+# alpha = alpha_init[pos]
+
+# alpha = alpha[0]
+
+
+# global fmax_term
+# alpha = 1
+# for a in range(0, len(x)):
+#    if dx[a] < 0:
+#       alpha_tmp = x[a] / -dx[a]
+#      if alpha > alpha_tmp:
+#         alpha = alpha_tmp
+
+# alpha = alpha * (1 / np.sqrt(2))
+
+# alpha_init = np.arange(0.01, 1.05, 0.05)
+# fmax_term_tmp = 0
+# position = 0
+
+# for alpha_n in alpha_init:
+#   for a in range(0, len(x)):
+#      fmax_term = (x[a] + alpha_n * dx[a])
+
+#     if fmax_term > fmax_term_tmp and fmax_term > 0:
+#        fmax_term = fmax_term_tmp
+#       position = a
+
+# alpha__ = (fmax_term - x[position]) / dx[position]
+
+
+def Dikin(A, b, c, beta):
+    with open('Dikin.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        header = ["x", "y", "Zielfunktionswert", "Iterationsschritt", "alpha"]
+        writer.writerow(header)
+        # passt aber zum spielen auskommentiert
+        # if (not(b==np.matmul(A,x0)).all()):
+        #   print("Die Verletzung der Nebenbedingung lautet: ",np.matmul(A,x0)-b)
+        #  return ("Startwert außerhalb des zulässigen Bereiches")
+
+        # df=pd.DataFrame.to_csv("x":)
+
+        x0 = np.linalg.lstsq(A, b, rcond=None)[0]
+
+        i = 0
+        x = []
+        x_tran = []
+        maxf = []
+        x.append(x0)
+        Schranke = 10 ** (-10)
+        writer.writerow([x[i],i])
+
+        while True:
+
+            D = np.identity(np.size(x0)) * x[i]  # D=I*x0
+
+            A_tran = np.matmul(A, D)  # A_tran=A*D
+            c_tran = np.dot(D, c)  # c_tran=D*c
+
+            P_tran = np.identity(D.shape[1]) - np.matmul(np.transpose(A_tran),
+                                                         np.matmul(np.linalg.inv(np.matmul(A_tran, np.transpose(A_tran))),
+                                                                   A_tran))
+            # P_tran=I-A_tran^T(A_tran*A_tran^T)^-1*A_tran
+
+            r_tan = np.dot(P_tran, c_tran)  # r_tran=P_tran*c_tran
+            alpha = -beta / np.min(r_tan)  # alpha=-beta/min{r_tran}
+
+            if alpha <= 0:  # Abbruchkriterium, wenn alpha kleiner gleich 0 ist
+                return ("Abbruch alpha ist kleiner 0, Zielfunktion ist unbeschränkt")
+
+            x_tran.append(np.ones(D.shape[1]) + alpha * r_tan)  # x_tran=e+alpha*r_tran
+            x.append(np.matmul(D, x_tran[i]))  # x=D*x_tran
+
+            maxf.append(np.dot(c, x[i]))
+
+            if np.linalg.norm(x[i + 1] - x[i]) < Schranke:  # Beendigungskriterium für das Verfahren
+                return dict(x=x, Zf=maxf, Iter=i)  # Ausgabe
+
+            writer.writerow([x[i],maxf, i,alpha])
+
+            i = i + 1
+            
+            
+     

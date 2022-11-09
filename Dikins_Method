@@ -1,0 +1,59 @@
+def Dikin_Methode(A,b,c,x0,beta):
+    # A ist die Matrix 
+    # b ist die der Vektor 
+    # x0 startbedingung
+    # beta ist die Schrittweite
+    # Modellgleichung  min x st. Ax=b x>=0 
+    
+    
+    
+    
+    
+    #passt aber zum spielen auskommentiert
+    #if (not(b==np.matmul(A,x0)).all()):
+     #   print("Die Verletzung der Nebenbedingung lautet: ",np.matmul(A,x0)-b)
+      #  return ("Startwert außerhalb des zulässigen Bereiches")
+    
+    #df=pd.DataFrame.to_csv("x":)
+    
+    x0=np.linalg.lstsq(A,b,rcond=None)[0]
+    
+    i=0
+    x=[]
+    x_tran=[]
+    maxf=[]
+    x.append(x0)
+    Schranke=10**(-10)
+    
+    
+    while True:
+
+        D=np.identity(np.size(x0))*x[i] #D=I*x0
+        
+        A_tran=np.matmul(A,D)#A_tran=A*D
+        c_tran=np.dot(D,c)#c_tran=D*c
+
+
+        P_tran=np.identity(D.shape[1])-np.matmul(np.transpose(A_tran),
+                                                 np.matmul(np.linalg.inv(np.matmul(A_tran,np.transpose(A_tran))),A_tran))
+        #P_tran=I-A_tran^T(A_tran*A_tran^T)^-1*A_tran
+
+        r_tan=np.dot(P_tran,c_tran)#r_tran=P_tran*c_tran
+        alpha=-beta/np.min(r_tan)#alpha=-beta/min{r_tran}
+        
+
+        if alpha<=0:#Abbruchkriterium, wenn alpha kleiner gleich 0 ist
+            return ("Abbruch alpha ist kleiner 0, Zielfunktion ist unbeschränkt")
+        
+        x_tran.append(np.ones(D.shape[1])+alpha*r_tan) #x_tran=e+alpha*r_tran
+        x.append(np.matmul(D,x_tran[i]))#x=D*x_tran
+        
+        maxf.append(np.dot(c,x[i]))
+        
+        if np.linalg.norm(x[i+1]-x[i])<Schranke:#Beendigungskriterium für das Verfahren
+            return dict(x=x,Zf=maxf,Iter=i) #Ausgabe
+        
+        
+        
+        i=i+1
+        

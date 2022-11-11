@@ -75,10 +75,7 @@ def MPC(A, b, c, x0, y0, s0):
 
             ende = time.time()
             breakpointer = np.abs(fmax - dualfmax) / (1 + fmax)
-            # if breakpointer<=10**(-8):
-            #   writer.writerow([x, y, s, fmax, k, ende - start])
-            #  print("kleiner")
-            # break
+
 
             if dualfmax - fmax < 10 ** (-len(x)):
                 print("Komplementarität nahezu erfüllt")
@@ -102,7 +99,7 @@ def Newton(A, M, X, S, r_y, r_c, r_xs):
     return d_x, d_y, d_s
 
 
-def Fast_LR(A):
+def Fast_LR(A):##optional für komplexere umfangreichere Systeme
     m, n = np.shape(A)
     L = np.eye(m)
     R = np.copy(A)
@@ -112,106 +109,12 @@ def Fast_LR(A):
         return L, R
 
 
-def argmax(x, dx):
-    alpha_min = 1
-    for i in range(0, len(x)):
-        if dx[i] < 0:
-            alpha_minimum = ((-x[i] / dx[i]))
-            if alpha_minimum < alpha_min:
-                alpha_min = alpha_minimum
-
-    return alpha_min
-
-
-# f = lambda alpha: (x + alpha * dx)
-# fmax = ([f(alpha) for alpha in alpha_init])
-
-# fmax_re = fmax
-# fmax_re = np.array(fmax).reshape(-1, 3)
-
-# min_f = np.amax(fmax_re)
-# pos = np.where(fmax == min_f)[0]
-# alpha = alpha_init[pos]
-
-# alpha = alpha[0]
-
-
-# global fmax_term
-# alpha = 1
-# for a in range(0, len(x)):
-#    if dx[a] < 0:
-#       alpha_tmp = x[a] / -dx[a]
-#      if alpha > alpha_tmp:
-#         alpha = alpha_tmp
-
-# alpha = alpha * (1 / np.sqrt(2))
-
-# alpha_init = np.arange(0.01, 1.05, 0.05)
-# fmax_term_tmp = 0
-# position = 0
-
-# for alpha_n in alpha_init:
-#   for a in range(0, len(x)):
-#      fmax_term = (x[a] + alpha_n * dx[a])
-
-#     if fmax_term > fmax_term_tmp and fmax_term > 0:
-#        fmax_term = fmax_term_tmp
-#       position = a
-
-# alpha__ = (fmax_term - x[position]) / dx[position]
-
-
-def Dikin(A, b, c, beta):
-    with open('Dikin.csv', 'w', newline='') as file:
-        writer = csv.writer(file)
-        header = ["x", "y", "Zielfunktionswert", "Iterationsschritt", "alpha"]
-        writer.writerow(header)
-        # passt aber zum spielen auskommentiert
-        # if (not(b==np.matmul(A,x0)).all()):
-        #   print("Die Verletzung der Nebenbedingung lautet: ",np.matmul(A,x0)-b)
-        #  return ("Startwert außerhalb des zulässigen Bereiches")
-
-        # df=pd.DataFrame.to_csv("x":)
-
-        x0 = np.linalg.lstsq(A, b, rcond=None)[0]
-
-        i = 0
-        x = []
-        x_tran = []
-        maxf = []
-        x.append(x0)
-        Schranke = 10 ** (-10)
-        writer.writerow([x[i],i])
-
-        while True:
-
-            D = np.identity(np.size(x0)) * x[i]  # D=I*x0
-
-            A_tran = np.matmul(A, D)  # A_tran=A*D
-            c_tran = np.dot(D, c)  # c_tran=D*c
-
-            P_tran = np.identity(D.shape[1]) - np.matmul(np.transpose(A_tran),
-                                                         np.matmul(np.linalg.inv(np.matmul(A_tran, np.transpose(A_tran))),
-                                                                   A_tran))
-            # P_tran=I-A_tran^T(A_tran*A_tran^T)^-1*A_tran
-
-            r_tan = np.dot(P_tran, c_tran)  # r_tran=P_tran*c_tran
-            alpha = -beta / np.min(r_tan)  # alpha=-beta/min{r_tran}
-
-            if alpha <= 0:  # Abbruchkriterium, wenn alpha kleiner gleich 0 ist
-                return ("Abbruch alpha ist kleiner 0, Zielfunktion ist unbeschränkt")
-
-            x_tran.append(np.ones(D.shape[1]) + alpha * r_tan)  # x_tran=e+alpha*r_tran
-            x.append(np.matmul(D, x_tran[i]))  # x=D*x_tran
-
-            maxf.append(np.dot(c, x[i]))
-
-            if np.linalg.norm(x[i + 1] - x[i]) < Schranke:  # Beendigungskriterium für das Verfahren
-                return dict(x=x, Zf=maxf, Iter=i)  # Ausgabe
-
-            writer.writerow([x[i],maxf, i,alpha])
-
-            i = i + 1
-            
-            
-     
+#def argmax(x, dx):
+#    alpha_min = 1
+#    for i in range(0, len(x)):
+#        if dx[i] < 0:
+#            alpha_minimum = ((-x[i] / dx[i]))
+#            if alpha_minimum < alpha_min:
+#                alpha_min = alpha_minimum
+#
+#    return alpha_min

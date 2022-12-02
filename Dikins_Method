@@ -6,10 +6,7 @@ def Dikin_Methode(A,b,c,x0,beta):
     # Modellgleichung  min x st. Ax=b x>=0 
     
     
-    
-    
-    
-    #passt aber zum spielen auskommentiert
+   
     #if (not(b==np.matmul(A,x0)).all()):
      #   print("Die Verletzung der Nebenbedingung lautet: ",np.matmul(A,x0)-b)
       #  return ("Startwert außerhalb des zulässigen Bereiches")

@@ -1,4 +1,4 @@
-def Dikin_Methode(A,b,c,x0,beta):
+def Dikin_Methode(A,b,c,beta,x0=None):
     # A ist die Matrix 
     # b ist die der Vektor 
     # x0 startbedingung
@@ -11,10 +11,10 @@ def Dikin_Methode(A,b,c,x0,beta):
      #   print("Die Verletzung der Nebenbedingung lautet: ",np.matmul(A,x0)-b)
       #  return ("Startwert außerhalb des zulässigen Bereiches")
     
-    #df=pd.DataFrame.to_csv("x":)
+    if x0 is None:
+      x0=np.linalg.lstsq(A,b,rcond=None)[0]
     
-    x0=np.linalg.lstsq(A,b,rcond=None)[0]
-    
+
     i=0
     x=[]
     x_tran=[]
@@ -40,7 +40,7 @@ def Dikin_Methode(A,b,c,x0,beta):
         
 
         if alpha<=0:#Abbruchkriterium, wenn alpha kleiner gleich 0 ist
-            return ("Abbruch alpha ist kleiner 0, Zielfunktion ist unbeschränkt")
+            return ("Abbruch alpha ist kleiner 0, Zielfunktion ist unbeschränkt oder Beta ist falsch parametrisiert")
         
         x_tran.append(np.ones(D.shape[1])+alpha*r_tan) #x_tran=e+alpha*r_tran
         x.append(np.matmul(D,x_tran[i]))#x=D*x_tran
@@ -53,4 +53,3 @@ def Dikin_Methode(A,b,c,x0,beta):
         
         
         i=i+1
-        

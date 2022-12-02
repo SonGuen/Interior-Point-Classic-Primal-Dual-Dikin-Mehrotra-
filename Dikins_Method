@@ -1,7 +1,7 @@
 def Dikin_Methode(A,b,c,beta,x0=None):
     # A ist die Matrix 
     # b ist die der Vektor 
-    # x0 startbedingung
+    # x0 startbedingung optional
     # beta ist die Schrittweite
     # Modellgleichung  min x st. Ax=b x>=0 
     
